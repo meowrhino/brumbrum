@@ -19,7 +19,14 @@
     <div class="k">chat anónimo por salas · meowrhino.studio</div>
     <div class="title">brumbrum<i></i></div>
     <div class="dots" id="dots"></div>
-    <div class="road"></div>
+    <!-- la moto negra, sin faro, encima de la carretera -->
+    <div class="road"><svg class="moto" viewBox="0 0 140 70" aria-hidden="true">
+      <g class="wheel"><circle cx="28" cy="52" r="14"/><path d="M28 38v28M14 52h28"/></g>
+      <g class="wheel"><circle cx="112" cy="52" r="14"/><path d="M112 38v28M98 52h28"/></g>
+      <path class="body" d="M30 50 44 30 70 24 92 26 104 38 110 52 88 52 80 44 50 44 42 52z"/>
+      <path d="M92 26 98 16h8M44 50h32" fill="none"/>
+      <rect class="tail" x="36" y="31" width="5" height="3"/>
+    </svg></div>
     <form id="login" autocomplete="off">
       <label class="k" for="name">nombre</label><input id="name" maxlength="25" required autocomplete="username" />
       <label class="k" for="password">password</label><input id="password" type="password" required autocomplete="current-password" />

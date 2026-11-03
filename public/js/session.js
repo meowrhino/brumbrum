@@ -18,9 +18,7 @@ export async function login(name, password) {
   return data.name;
 }
 
-export function logout() {
-  document.cookie = "brumbrum_user=; Path=/; Max-Age=0";
-}
+export const logout = () => fetch("/api/logout", { method: "POST" });
 
 export const getRoom = () => location.hash.slice(1);
 export const getColor = (name) => localStorage.getItem("brumbrum_color") || colorFor(name);

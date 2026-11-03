@@ -41,7 +41,12 @@ button { color: var(--dim); cursor: pointer; }
   animation: drive 1.2s linear infinite;
 }
 @keyframes drive { to { background-position: -48px 0; } }
-@media (prefers-reduced-motion: reduce) { .road::after { animation: none; } }
+.moto { position: absolute; right: 8%; bottom: 0; width: 140px; height: 70px; fill: #000; stroke: #fff; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; animation: bob .6s ease-in-out infinite alternate; }
+.moto .wheel { transform-box: fill-box; transform-origin: center; animation: spin 1.2s linear infinite; }
+.moto .tail { fill: var(--danger); stroke: none; }
+@keyframes bob { to { transform: translateY(-1.5px); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .road::after, .moto, .moto .wheel { animation: none; } }
 
 #login { display: grid; grid-template-columns: max-content 1fr; gap: 12px 16px; align-items: center; max-width: 480px; }
 #login button { justify-self: start; }

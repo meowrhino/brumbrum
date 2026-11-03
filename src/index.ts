@@ -57,6 +57,11 @@ export default {
 
     if (url.pathname === "/api/me") return json({ name: user });
 
+    // La cookie es HttpOnly: solo el servidor puede borrarla.
+    if (url.pathname === "/api/logout" && request.method === "POST") {
+      return json({ ok: true }, { headers: { "Set-Cookie": "brumbrum_user=; Path=/; HttpOnly; Max-Age=0" } });
+    }
+
     if (url.pathname === "/api/rooms") {
       if (!user) return json({ error: "unauthorized" }, { status: 401 });
       const rooms = await Promise.all(

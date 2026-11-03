@@ -69,9 +69,9 @@ $("#goto").addEventListener("submit", (e) => {
   e.preventDefault();
   location.hash = $("#room-name").value.trim().toLowerCase();
 });
-$("#logout").addEventListener("click", (e) => {
+$("#logout").addEventListener("click", async (e) => {
   e.preventDefault();
-  logout();
+  await logout();
   name = null;
   location.hash = "";
   show("entrada");

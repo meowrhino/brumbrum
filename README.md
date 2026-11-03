@@ -20,7 +20,7 @@ ConversationDO (src/conversation.ts) ← el motor: mensajes, colores, presencia
 ```
 
 front en `public/`: una página con tres vistas (entrada → lobby → sala, la
-sala va en el hash `#ciudad`). estética B de `public/mockups/`: petra
+sala va en el hash `#ciudad`). estética: petra
 (Ableton: gris neutro, cero border-radius, JetBrains Mono) + las burbujas del
 chat de Dollars como clips de Live (avatar y burbuja en el color de quien habla).
 
