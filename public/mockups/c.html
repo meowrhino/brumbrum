@@ -1,0 +1,49 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>brumbrum — C: Asfalto cálido</title>
+<style>
+@font-face{font-family:'JetBrains Mono';src:url('/fonts/jetbrains-mono-400.woff2') format('woff2');font-weight:400}
+@font-face{font-family:'JetBrains Mono';src:url('/fonts/jetbrains-mono-600.woff2') format('woff2');font-weight:600}
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0d0c0a;--surface:#16130f;--border:#2a2622;--text:#d8d2c4;--dim:#a89e8b;--muted:#6b6357;--accent:#e8b04a}
+body{background:var(--bg);color:var(--text);font:14px/1.6 'JetBrains Mono',monospace}
+section{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:28px}
+h2.tag{position:fixed;top:12px;left:16px;font-size:11px;color:#555;letter-spacing:.2em;text-transform:uppercase}
+/* --- entrada: el faro único en la oscuridad -------------------------------- */
+.lamp{width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,#fff6d8 0 18%,var(--accent) 30%,rgba(232,176,74,.15) 60%,transparent 72%);
+  box-shadow:0 0 60px rgba(232,176,74,.35),0 0 140px rgba(232,176,74,.15);animation:flicker 4s infinite}
+@keyframes flicker{0%,97%,100%{opacity:1}98%{opacity:.75}99%{opacity:.9}}
+h1{font-size:26px;font-weight:600;letter-spacing:.3em;text-transform:lowercase}
+h1 .cursor{animation:blink 1s step-end infinite;color:var(--accent)}@keyframes blink{50%{opacity:0}}
+p.sub{font-size:11px;color:var(--muted);text-align:center;max-width:300px}
+form{display:flex;flex-direction:column;gap:10px;align-items:center}
+input{width:240px;height:34px;background:var(--surface);border:1px solid var(--border);color:var(--text);font:inherit;padding:0 10px}
+input:focus{outline:0;border-color:var(--accent)}
+button{border:0;background:transparent;color:var(--dim);font:inherit;cursor:pointer}button:hover{color:var(--accent)}
+/* --- chat: avatares redondos, burbujas tenues en el color ---------------- */
+.chat{width:min(100%,640px);display:flex;flex-direction:column;gap:12px}
+.m{display:flex;gap:10px;align-items:flex-end}.m.me{flex-direction:row-reverse}
+.av{width:34px;height:34px;border-radius:50%;background:var(--c);color:#0d0c0a;padding:6px;flex:none}
+.av svg{width:100%;height:100%}
+.b{max-width:75%;padding:8px 12px;border-radius:14px 14px 14px 3px;background:color-mix(in srgb,var(--c) 22%,var(--surface));border:1px solid color-mix(in srgb,var(--c) 45%,transparent)}
+.m.me .b{border-radius:14px 14px 3px 14px}
+.b small{display:block;font-size:10px;color:var(--c);margin-bottom:2px}
+.sys{font-size:11px;color:var(--muted);text-align:center}
+.sys::before,.sys::after{content:' · '}
+.bar{display:flex;gap:10px;width:min(100%,640px)}.bar input{flex:1;width:auto}
+</style></head><body>
+<h2 class="tag">C · asfalto cálido</h2>
+<section>
+  <div class="lamp"></div>
+  <h1>brumbrum<span class="cursor">_</span></h1>
+  <p class="sub">una moto negra sin faro. si oyes el motor, ya estás dentro.</p>
+  <form onsubmit="return false"><input type="password" placeholder="contraseña"><button>entrar</button></form>
+</section>
+<section>
+  <div class="chat" id="chat"></div>
+  <div class="bar"><input placeholder="escribe…"><button>enviar</button></div>
+</section>
+<script type="module">
+import {USERS,MSGS,svg} from './_shared.js';
+chat.innerHTML=MSGS.map(m=>m[0]==='sys'?`<div class="sys">${m[1]} ${m[2]}</div>`:
+ `<div class="m ${m[0]==='yo'?'me':''}" style="--c:${USERS[m[0]].color}"><div class="av">${svg(USERS[m[0]].ico)}</div><div class="b"><small>${m[0]}</small>${m[1]}</div></div>`).join('');
+</script></body></html>
