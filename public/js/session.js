@@ -1,25 +1,23 @@
-// Identidad: el nombre lo da el servidor (/api/me, cookie firmada). El color
-// es local a este dispositivo y se sincroniza a la sala vía el perfil del DO.
-import { colorFor } from "./util.js";
-
+// Identidad: nombre, color y avatar viven en el servidor (UsersDO) y llegan
+// por /api/me con la cookie firmada. Nada en localStorage.
 export async function me() {
-  const r = await fetch("/api/me");
-  return (await r.json()).name;
+  return (await fetch("/api/me")).json();
 }
 
-export async function login(name, password) {
+export async function login(name, password, club) {
   const r = await fetch("/api/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, password }),
+    body: JSON.stringify({ name, password, club }),
   });
   const data = await r.json();
   if (!r.ok) throw new Error(data.error || "error");
-  return data.name;
+  return data; // { name, color, avatar, created }
 }
 
 export const logout = () => fetch("/api/logout", { method: "POST" });
 
+export const saveProfile = (p) =>
+  fetch("/api/profile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(p) });
+
 export const getRoom = () => location.hash.slice(1);
-export const getColor = (name) => localStorage.getItem("brumbrum_color") || colorFor(name);
-export const setColor = (color) => localStorage.setItem("brumbrum_color", color);

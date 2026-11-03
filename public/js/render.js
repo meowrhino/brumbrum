@@ -1,17 +1,19 @@
 import { $, colorFor, hhmm, dayKey, dayLabel, linkifyInto } from "./util.js";
 import { avatarSvg } from "./avatar.js";
 
-// Pinta la sala: avatar (pictograma) + burbuja, los dos en el color de quien
-// habla (variable CSS --c en la fila, así recolorear es cambiar una propiedad).
-// Texto siempre con textContent/linkifyInto, nunca innerHTML con datos ajenos.
+// Pinta la sala como el chat de Dollars: avatar cuadrado con el nombre debajo
+// y bocadillo con pico, todo en el color de quien habla (variable CSS --c en
+// la fila). Texto siempre con textContent/linkifyInto, nunca innerHTML ajeno.
 
 const list = () => $("#messages");
 let colors = {};
+let avatars = {};
 let lastDay = null;
 let online = [];
 let myName = "";
 
 const colorOf = (name) => colors[name] || colorFor(name);
+const avatarOf = (name) => avatars[name] || "000";
 
 export function setMe(name) { myName = name; }
 
@@ -57,27 +59,30 @@ export function addMessage(m) {
     li.dataset.author = m.author;
     li.style.setProperty("--c", colorOf(m.author));
 
+    const who = document.createElement("div");
+    who.className = "who";
     const av = document.createElement("div");
     av.className = "avatar";
-    av.innerHTML = avatarSvg(m.author); // SVG propio, no datos del usuario
-    av.title = m.author;
+    av.innerHTML = avatarSvg(avatarOf(m.author)); // SVG propio, no datos del usuario
+    const name = document.createElement("span");
+    name.className = "name";
+    name.textContent = m.author;
+    who.append(av, name);
 
     const bubble = document.createElement("div");
     bubble.className = "bubble";
-    const name = document.createElement("span");
-    name.className = "name";
-    name.textContent = `${m.author} · ${hhmm(m.ts)}`;
-    bubble.appendChild(name);
+    bubble.title = hhmm(m.ts);
     linkifyInto(bubble, m.body);
 
-    li.append(av, bubble);
+    li.append(who, bubble);
   }
   box.appendChild(li);
   if (wasAtBottom) box.scrollTop = box.scrollHeight;
 }
 
-export function renderHistory(messages, profiles) {
+export function renderHistory(messages, profiles, avs) {
   colors = profiles || {};
+  avatars = avs || {};
   lastDay = null;
   list().innerHTML = "";
   messages.forEach(addMessage);
@@ -90,4 +95,11 @@ export function applyColor(name, color) {
     if (li.dataset.author === name) li.style.setProperty("--c", color);
   }
   paintPresence();
+}
+
+export function applyAvatar(name, code) {
+  avatars[name] = code;
+  for (const li of list().querySelectorAll(".msg")) {
+    if (li.dataset.author === name) li.querySelector(".avatar").innerHTML = avatarSvg(code);
+  }
 }

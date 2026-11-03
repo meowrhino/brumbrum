@@ -29,7 +29,8 @@
     </svg></div>
     <form id="login" autocomplete="off">
       <label class="k" for="name">nombre</label><input id="name" maxlength="25" required autocomplete="username" />
-      <label class="k" for="password">password</label><input id="password" type="password" required autocomplete="current-password" />
+      <label class="k" for="password">tu contraseña</label><input id="password" type="password" minlength="4" required autocomplete="current-password" />
+      <label class="k" for="club">password del club</label><input id="club" type="password" required autocomplete="off" />
       <span></span><button type="submit">entrar →</button>
       <span></span><span id="login-error" class="err"></span>
     </form>
@@ -39,7 +40,7 @@
   <section id="lobby" class="view" hidden>
     <header class="top">
       <span class="title small">brumbrum<i></i></span>
-      <span class="k">tú: <b id="me-lobby"></b> · <a href="#" id="logout">salir</a></span>
+      <span class="k"><a href="#" id="edit-avatar" class="me-chip"><span class="avatar mini" id="me-avatar"></span><b id="me-lobby"></b></a> · <a href="#" id="logout">salir</a></span>
     </header>
     <div class="road"></div>
     <ul id="rooms" class="rooms"></ul>
@@ -48,6 +49,21 @@
       <input id="room-name" placeholder="nombre-de-sala" pattern="[a-z0-9_-]{1,32}" maxlength="32" required />
       <button type="submit">ir →</button>
     </form>
+  </section>
+
+  <!-- 2b. tu avatar: capas + color -->
+  <section id="avatar" class="view" hidden>
+    <header class="top"><span class="title small">tu avatar</span><span class="k" id="avatar-name"></span></header>
+    <div class="editor">
+      <div class="avatar big" id="preview"></div>
+      <div class="controls">
+        <div class="row"><span class="k">pelo</span><button type="button" data-layer="0" data-d="-1">‹</button><b id="v0"></b><button type="button" data-layer="0" data-d="1">›</button></div>
+        <div class="row"><span class="k">ojos</span><button type="button" data-layer="1" data-d="-1">‹</button><b id="v1"></b><button type="button" data-layer="1" data-d="1">›</button></div>
+        <div class="row"><span class="k">extra</span><button type="button" data-layer="2" data-d="-1">‹</button><b id="v2"></b><button type="button" data-layer="2" data-d="1">›</button></div>
+        <div class="row"><span class="k">color</span><input type="color" id="avatar-color" class="swatch" /><button type="button" id="random-avatar">al azar</button></div>
+        <div class="row"><span></span><button type="button" id="save-avatar">listo →</button></div>
+      </div>
+    </div>
   </section>
 
   <!-- 3. sala: avatares + burbujas, estilo clip de Live -->

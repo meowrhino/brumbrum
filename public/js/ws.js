@@ -4,23 +4,21 @@
 //   msg     → un mensaje (user o system)
 //   color   → { name, color }          (alguien cambió su color)
 
-export function connectRoom({ room, name, color, onHistory, onMessage, onColor, onPresence }) {
+export function connectRoom({ room, onHistory, onMessage, onColor, onAvatar, onPresence }) {
   let ws;
   let closed = false;
   const proto = location.protocol === "https:" ? "wss" : "ws";
-  const url =
-    `${proto}://${location.host}/ws` +
-    `?room=${encodeURIComponent(room)}` +
-    `&name=${encodeURIComponent(name)}` +
-    `&color=${encodeURIComponent(color)}`;
+  // nombre, color y avatar los pone el Worker desde la cookie/perfil
+  const url = `${proto}://${location.host}/ws?room=${encodeURIComponent(room)}`;
 
   function open() {
     ws = new WebSocket(url);
     ws.onmessage = (e) => {
       const data = JSON.parse(e.data);
-      if (data.type === "history") onHistory(data.messages, data.profiles || {}, data.online || []);
+      if (data.type === "history") onHistory(data.messages, data.profiles || {}, data.avatars || {}, data.online || []);
       else if (data.type === "msg") onMessage(data);
       else if (data.type === "color") onColor(data);
+      else if (data.type === "avatar") onAvatar?.(data);
       else if (data.type === "presence") onPresence?.(data.online || []);
     };
     // El DO hiberna o la red cae → el socket se cierra; reabrimos solos.

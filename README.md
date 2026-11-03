@@ -10,17 +10,23 @@ por sala + WebSocket Hibernation + SQLite en el DO. sin D1.
 
 ```
 Worker (src/index.ts)
-  POST /api/login {name,password} → comprueba CLUB_PASSWORD → cookie firmada (HMAC)
-  GET  /api/me                    → tu nombre (o null)
+  POST /api/login {name,password,club} → club OK → UsersDO.auth (registra o
+                                         comprueba TU contraseña) → cookie HMAC
+  GET  /api/me                    → tu nombre, color y avatar (o null)
+  POST /api/profile {color,avatar}→ guarda en UsersDO
+  POST /api/logout
   GET  /api/rooms                 → salas fijas + gente dentro (RPC online() a cada DO)
-  /ws?room=<sala>&color=<hex>     → cookie OK → ConversationDO (nombre SIEMPRE de la cookie)
+  /ws?room=<sala>                 → cookie OK → ConversationDO con nombre, color y
+                                    avatar inyectados desde el UsersDO
   resto                           → ASSETS (public/)
 
-ConversationDO (src/conversation.ts) ← el motor: mensajes, colores, presencia
+ConversationDO (src/conversation.ts) ← el motor: mensajes, colores, avatares, presencia
+UsersDO        (src/users.ts)        ← uno solo: nombres reservados (PBKDF2), color, avatar
 ```
 
-front en `public/`: una página con tres vistas (entrada → lobby → sala, la
-sala va en el hash `#ciudad`). estética: petra
+front en `public/`: una página con cuatro vistas (entrada → tu avatar → lobby
+→ sala, la sala va en el hash `#ciudad`). el avatar es un pictograma por capas
+(pelo, ojos, extra; `public/js/avatar.js`) guardado como código de 3 dígitos. estética: petra
 (Ableton: gris neutro, cero border-radius, JetBrains Mono) + las burbujas del
 chat de Dollars como clips de Live (avatar y burbuja en el color de quien habla).
 
@@ -32,7 +38,8 @@ cp .dev.vars.example .dev.vars   # AUTH_SECRET y CLUB_PASSWORD de desarrollo
 npm run dev
 ```
 
-entra con cualquier nombre y la contraseña de `.dev.vars` (`brumbrum`).
+password del club: la de `.dev.vars` (`brumbrum`). el nombre se registra la
+primera vez con la contraseña que tú pongas; desde entonces es tuyo.
 para chatear contigo mismo: dos navegadores (la cookie es por navegador).
 
 ## desplegar
@@ -47,5 +54,4 @@ npm run deploy
 
 - "escribiendo…" (broadcast efímero desde el DO)
 - salas creadas por URL en el lobby (hoy solo salen las 6 fijas) → LobbyDO
-- elegir pictograma (hoy sale del nombre) → al perfil del DO como el color
 - host de sala: expulsar / silenciar / borrar

@@ -72,16 +72,35 @@ button { color: var(--dim); cursor: pointer; }
 .iconbtn { font-size: 14px; }
 .iconbtn.off { opacity: .4; }
 
-#messages { list-style: none; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 4px 0; }
-.msg { display: grid; grid-template-columns: 40px 1fr; gap: 10px; align-items: start; }
-.msg.me { grid-template-columns: 1fr 40px; }
-.msg.me .avatar { order: 2; } .msg.me .bubble { justify-self: end; }
-.avatar { width: 40px; height: 40px; background: var(--c); color: var(--ink); padding: 6px; }
+/* avatar: pictograma de tinta sobre el bloque de color, con borde claro como
+   en la captura de Dollars; el nombre debajo, diminuto */
+.avatar { width: 44px; height: 44px; background: var(--c); color: var(--ink); padding: 5px; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.75); }
 .avatar svg { width: 100%; height: 100%; display: block; }
-.bubble { justify-self: start; max-width: 80%; background: var(--c); color: var(--ink); padding: 8px 12px; overflow-wrap: anywhere; }
-.bubble .name { display: block; font-size: 10px; opacity: .65; margin-bottom: 2px; }
+.avatar.mini { width: 16px; height: 16px; padding: 2px; display: inline-block; vertical-align: -3px; margin-right: 6px; box-shadow: none; }
+.avatar.big { width: 160px; height: 160px; padding: 18px; }
+.me-chip { color: var(--text); }
+
+#messages { list-style: none; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding: 4px 0; }
+.msg { display: grid; grid-template-columns: 56px 1fr; gap: 12px; align-items: start; }
+.msg.me { grid-template-columns: 1fr 56px; }
+.msg.me .who { order: 2; } .msg.me .bubble { justify-self: end; }
+.who { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.who .name { font-size: 10px; color: var(--dim); max-width: 56px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* el bocadillo: la única curva de toda la casa. Pico hacia el avatar. */
+.bubble { position: relative; justify-self: start; max-width: 80%; background: var(--c); color: var(--ink); padding: 9px 14px; border-radius: 10px; overflow-wrap: anywhere; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.75), inset 0 -14px 0 rgba(0,0,0,.08); }
+.bubble::before { content: ''; position: absolute; top: 14px; left: -9px; border: 7px solid transparent; border-right-color: var(--c); border-left: 0; }
+.msg.me .bubble::before { left: auto; right: -9px; border-right: 0; border-left: 7px solid var(--c); }
 .bubble .link { text-decoration: underline; text-underline-offset: 3px; }
-.msg.system { display: block; font-size: 10px; color: var(--muted); padding-left: 50px; }
+
+/* editor de avatar */
+.editor { display: flex; gap: 32px; align-items: flex-start; flex-wrap: wrap; }
+.controls { display: flex; flex-direction: column; gap: 10px; }
+.controls .row { display: grid; grid-template-columns: 48px 24px 48px 24px; gap: 8px; align-items: center; }
+.controls .row b { text-align: center; font-weight: 400; color: var(--dim); font-size: 12px; }
+.controls button { padding: 4px 0; }
+.controls .row:nth-last-child(2), .controls .row:last-child { grid-template-columns: 48px auto; }
+.controls .row:nth-last-child(2) { grid-template-columns: 48px 24px auto; }
+.msg.system { display: block; font-size: 10px; color: var(--muted); padding-left: 68px; }
 .daysep { text-align: center; font-size: 10px; color: var(--muted); }
 
 #composer { display: flex; gap: 12px; border-top: 1px solid var(--border); padding-top: 12px; }

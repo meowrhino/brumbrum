@@ -23,3 +23,11 @@ class_name = "ConversationDO"
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["ConversationDO"]
+
+[[durable_objects.bindings]]
+name = "USERS"
+class_name = "UsersDO"
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["UsersDO"]

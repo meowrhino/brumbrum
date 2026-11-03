@@ -1,12 +1,13 @@
-// Tres vistas en una página: entrada → lobby → sala. La sala va en el hash
-// (#ciudad), así una URL compartida abre esa sala directamente.
+// Vistas en una página: entrada → (tu avatar) → lobby → sala. La sala va en
+// el hash (#ciudad), así una URL compartida abre esa sala directamente.
 import { $ } from "./util.js";
-import { me, login, logout, getRoom, getColor, setColor } from "./session.js";
+import { me, login, logout, saveProfile, getRoom } from "./session.js";
 import { connectRoom } from "./ws.js";
-import { addMessage, renderHistory, applyColor, setOnline, setMe } from "./render.js";
+import { addMessage, renderHistory, applyColor, applyAvatar, setOnline, setMe } from "./render.js";
+import { avatarSvg, parse, LAYERS } from "./avatar.js";
 import * as alerts from "./alerts.js";
 
-let name = null;
+let profile = null; // { name, color, avatar }
 let conn = null;
 
 function show(id) {
@@ -14,9 +15,9 @@ function show(id) {
 }
 
 async function boot() {
-  name = await me();
-  if (!name) return show("entrada");
-  setMe(name);
+  profile = await me();
+  if (!profile.name) return show("entrada");
+  setMe(profile.name);
   route();
 }
 
@@ -31,22 +32,64 @@ $("#login").addEventListener("submit", async (e) => {
   e.preventDefault();
   $("#login-error").textContent = "";
   try {
-    name = await login($("#name").value, $("#password").value);
-    setMe(name);
-    route();
+    profile = await login($("#name").value, $("#password").value, $("#club").value);
+    setMe(profile.name);
+    // nombre nuevo → primero te haces el avatar
+    profile.created ? openAvatar() : route();
   } catch (err) {
     $("#login-error").textContent = err.message;
   }
 });
-// puntitos de colores bajo el nombre: decorativos, un color por letra
 $("#dots").innerHTML = ["#f2a93b", "#4f8fe8", "#7bd389", "#e86aa0", "#c0c0c0"]
   .map((c) => `<b style="--c:${c}"></b>`).join("");
+
+// --- tu avatar -------------------------------------------------------------
+const SIZES = [LAYERS.pelo.length, LAYERS.ojos.length, LAYERS.extra.length];
+let draft = [0, 0, 0];
+
+function paintDraft() {
+  const code = draft.join("");
+  const prev = $("#preview");
+  prev.style.setProperty("--c", $("#avatar-color").value);
+  prev.innerHTML = avatarSvg(code);
+  draft.forEach((v, i) => ($(`#v${i}`).textContent = `${v + 1}/${SIZES[i]}`));
+}
+function openAvatar() {
+  closeRoom();
+  show("avatar");
+  $("#avatar-name").textContent = profile.name;
+  draft = parse(profile.avatar);
+  $("#avatar-color").value = profile.color;
+  paintDraft();
+}
+for (const b of document.querySelectorAll("#avatar [data-layer]")) {
+  b.addEventListener("click", () => {
+    const i = +b.dataset.layer;
+    draft[i] = (draft[i] + +b.dataset.d + SIZES[i]) % SIZES[i];
+    paintDraft();
+  });
+}
+$("#avatar-color").addEventListener("input", paintDraft);
+$("#random-avatar").addEventListener("click", () => {
+  draft = SIZES.map((n) => Math.floor(Math.random() * n));
+  $("#avatar-color").value = `#${Math.floor(Math.random() * 0x1000000).toString(16).padStart(6, "0")}`;
+  paintDraft();
+});
+$("#save-avatar").addEventListener("click", async () => {
+  profile.avatar = draft.join("");
+  profile.color = $("#avatar-color").value;
+  await saveProfile({ avatar: profile.avatar, color: profile.color });
+  route();
+});
 
 // --- lobby -----------------------------------------------------------------
 async function openLobby() {
   closeRoom();
   show("lobby");
-  $("#me-lobby").textContent = name;
+  $("#me-lobby").textContent = profile.name;
+  const mini = $("#me-avatar");
+  mini.style.setProperty("--c", profile.color);
+  mini.innerHTML = avatarSvg(profile.avatar);
   const rooms = await (await fetch("/api/rooms")).json();
   const ul = $("#rooms");
   ul.innerHTML = "";
@@ -69,10 +112,11 @@ $("#goto").addEventListener("submit", (e) => {
   e.preventDefault();
   location.hash = $("#room-name").value.trim().toLowerCase();
 });
+$("#edit-avatar").addEventListener("click", (e) => { e.preventDefault(); openAvatar(); });
 $("#logout").addEventListener("click", async (e) => {
   e.preventDefault();
   await logout();
-  name = null;
+  profile = null;
   location.hash = "";
   show("entrada");
 });
@@ -82,24 +126,28 @@ function openRoom(room) {
   closeRoom();
   show("sala");
   $("#room").textContent = room;
-  let color = getColor(name);
   const picker = $("#mycolor");
-  picker.value = color;
+  picker.value = profile.color;
   alerts.setup({ emoji: "🏍", base: `#${room}` });
 
   conn = connectRoom({
-    room, name, color,
-    onHistory: (messages, profiles, online) => { renderHistory(messages, profiles); setOnline(online); },
+    room,
+    onHistory: (messages, profiles, avatars, online) => { renderHistory(messages, profiles, avatars); setOnline(online); },
     onMessage: (m) => {
       addMessage(m);
-      if (m.kind !== "system" && m.author !== name) alerts.incoming(m.author, m.body);
+      if (m.kind !== "system" && m.author !== profile.name) alerts.incoming(m.author, m.body);
     },
     onColor: ({ name, color }) => applyColor(name, color),
+    onAvatar: ({ name, avatar }) => applyAvatar(name, avatar),
     onPresence: setOnline,
   });
 
-  picker.oninput = () => applyColor(name, picker.value);
-  picker.onchange = () => { color = picker.value; setColor(color); applyColor(name, color); conn.setColor(color); };
+  picker.oninput = () => applyColor(profile.name, picker.value);
+  picker.onchange = () => {
+    profile.color = picker.value;
+    saveProfile({ color: profile.color }); // persistente (UsersDO)
+    conn.setColor(profile.color); // y en vivo para la sala
+  };
 }
 function closeRoom() {
   conn?.close();
@@ -116,5 +164,5 @@ $("#composer").addEventListener("submit", (e) => {
 });
 $("#back").addEventListener("click", (e) => { e.preventDefault(); location.hash = ""; });
 
-addEventListener("hashchange", () => { if (name) route(); });
+addEventListener("hashchange", () => { if (profile?.name) route(); });
 boot();

@@ -78,6 +78,13 @@ export class ConversationDO extends DurableObject<Env> {
       } catch {
         // ya existe
       }
+      // brumbrum: el avatar (código de 3 dígitos, ver public/js/avatar.js) va
+      // junto al color; lo inyecta el Worker desde el UsersDO.
+      try {
+        sql.exec("ALTER TABLE profiles ADD COLUMN avatar TEXT NOT NULL DEFAULT '000'");
+      } catch {
+        // ya existe
+      }
       // Salidas pendientes de anunciar (con gracia): name → cuándo toca avisar.
       sql.exec(`
         CREATE TABLE IF NOT EXISTS pending_leave (
@@ -97,11 +104,12 @@ export class ConversationDO extends DurableObject<Env> {
     // El Worker ya puso aquí el nombre AUTENTICADO y el color del usuario.
     const name = (url.searchParams.get("name") || "anon").slice(0, 25) || "anon";
     const color = cleanColor(url.searchParams.get("color")) ?? defaultColor(name);
+    const avatar = (url.searchParams.get("avatar") || "000").slice(0, 3);
     const ip = request.headers.get("CF-Connecting-IP") || "local";
 
     // El color del Worker es autoritativo (viene del UserDO) → lo refrescamos
     // siempre; `lastJoinTs` solo avanza cuando anunciamos la conexión.
-    const announce = this.touchProfile(name, color);
+    const announce = this.touchProfile(name, color, avatar);
     // Si vuelve antes de expirar la gracia, cancela su "se ha desconectado".
     this.ctx.storage.sql.exec("DELETE FROM pending_leave WHERE name = ?", name);
 
@@ -114,6 +122,7 @@ export class ConversationDO extends DurableObject<Env> {
         type: "history",
         messages: this.recent(50),
         profiles: this.profiles(),
+        avatars: this.avatars(),
         online: this.onlineNames(),
       }),
     );
@@ -121,6 +130,7 @@ export class ConversationDO extends DurableObject<Env> {
     if (announce) this.system(name, "se ha conectado");
     // Avisa del color del que entra para que el otro lo pinte al instante.
     this.broadcast(JSON.stringify({ type: "color", name, color }));
+    this.broadcast(JSON.stringify({ type: "avatar", name, avatar }));
     this.broadcastPresence();
 
     return new Response(null, { status: 101, webSocket: client });
@@ -222,19 +232,21 @@ export class ConversationDO extends DurableObject<Env> {
 
   // Registra la conexión y decide si anunciarla (fuera de la ventana). El color
   // SÍ se refresca siempre (lo manda autenticado el Worker desde el UserDO).
-  private touchProfile(name: string, color: string): boolean {
+  private touchProfile(name: string, color: string, avatar: string): boolean {
     const now = Date.now();
     const prev = this.ctx.storage.sql
       .exec<{ lastJoinTs: number }>("SELECT lastJoinTs FROM profiles WHERE name = ?", name)
       .toArray();
     const announce = prev.length === 0 || now - prev[0].lastJoinTs > JOIN_WINDOW_MS;
     this.ctx.storage.sql.exec(
-      `INSERT INTO profiles (name, color, lastJoinTs) VALUES (?, ?, ?)
+      `INSERT INTO profiles (name, color, avatar, lastJoinTs) VALUES (?, ?, ?, ?)
        ON CONFLICT(name) DO UPDATE SET
          color = excluded.color,
+         avatar = excluded.avatar,
          lastJoinTs = CASE WHEN ? = 1 THEN excluded.lastJoinTs ELSE profiles.lastJoinTs END`,
       name,
       color,
+      avatar,
       announce ? now : 0,
       announce ? 1 : 0,
     );
@@ -322,6 +334,16 @@ export class ConversationDO extends DurableObject<Env> {
       .exec<{ name: string; color: string }>("SELECT name, color FROM profiles")
       .toArray()) {
       out[p.name] = p.color;
+    }
+    return out;
+  }
+
+  private avatars(): Record<string, string> {
+    const out: Record<string, string> = {};
+    for (const p of this.ctx.storage.sql
+      .exec<{ name: string; avatar: string }>("SELECT name, avatar FROM profiles")
+      .toArray()) {
+      out[p.name] = p.avatar;
     }
     return out;
   }
