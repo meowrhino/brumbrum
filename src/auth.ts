@@ -1,4 +1,4 @@
-// Identidad de toctoc: una cookie con el nombre FIRMADA con HMAC-SHA256.
+// Identidad de brumbrum (heredada de toctoc): una cookie con el nombre FIRMADA con HMAC-SHA256.
 //
 // La cookie vale `<nombre>.<firma>` donde firma = HMAC(nombre, AUTH_SECRET) en
 // base64url. Sin el secret no se puede falsificar, así que ya no vale editar la
@@ -9,7 +9,7 @@
 // AUTH_SECRET se inyecta como secret del Worker (`wrangler secret put`), y en
 // local desde .dev.vars (ignorado por git).
 
-const COOKIE = "toctoc_user";
+const COOKIE = "brumbrum_user";
 
 // HMAC-SHA256(msg) → base64url. Cacheamos la CryptoKey por secret para no
 // reimportarla en cada petición.
@@ -39,7 +39,7 @@ async function sign(name: string, secret: string): Promise<string> {
 }
 
 // Comparación en tiempo constante para no filtrar la firma por timing.
-function safeEqual(a: string, b: string): boolean {
+export function safeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
   let r = 0;
   for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i);
@@ -51,7 +51,7 @@ function safeEqual(a: string, b: string): boolean {
 export async function getUser(request: Request, secret: string | undefined): Promise<string | null> {
   if (!secret) return null;
   const cookie = request.headers.get("Cookie") || "";
-  const m = cookie.match(/(?:^|;\s*)toctoc_user=([^;]+)/);
+  const m = cookie.match(/(?:^|;\s*)brumbrum_user=([^;]+)/);
   if (!m) return null;
 
   const raw = decodeURIComponent(m[1]);

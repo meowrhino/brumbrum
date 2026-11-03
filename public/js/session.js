@@ -1,28 +1,27 @@
-// Identidad minimal del cliente. En brumbrum el nombre es anónimo y local (no hay
-// cuentas — eso es toctoc): se recuerda en localStorage y se pregunta una vez.
-// El color también es local en este dispositivo, pero se sincroniza a la sala
-// (el resto lo ve) vía el perfil que guarda el DO.
+// Identidad: el nombre lo da el servidor (/api/me, cookie firmada). El color
+// es local a este dispositivo y se sincroniza a la sala vía el perfil del DO.
 import { colorFor } from "./util.js";
 
-export function getRoom() {
-  const params = new URLSearchParams(location.search);
-  return params.get("room") || location.hash.slice(1) || "lobby";
+export async function me() {
+  const r = await fetch("/api/me");
+  return (await r.json()).name;
 }
 
-export function getName() {
-  let name = localStorage.getItem("brumbrum_name");
-  if (!name) {
-    name = (prompt("¿tu nombre?") || "anon").slice(0, 25) || "anon";
-    localStorage.setItem("brumbrum_name", name);
-  }
-  return name;
+export async function login(name, password) {
+  const r = await fetch("/api/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, password }),
+  });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || "error");
+  return data.name;
 }
 
-// Color elegido (hex) o, si nunca eligió, el determinista por nombre.
-export function getColor() {
-  return localStorage.getItem("brumbrum_color") || colorFor(getName());
+export function logout() {
+  document.cookie = "brumbrum_user=; Path=/; Max-Age=0";
 }
 
-export function setColor(color) {
-  localStorage.setItem("brumbrum_color", color);
-}
+export const getRoom = () => location.hash.slice(1);
+export const getColor = (name) => localStorage.getItem("brumbrum_color") || colorFor(name);
+export const setColor = (color) => localStorage.setItem("brumbrum_color", color);

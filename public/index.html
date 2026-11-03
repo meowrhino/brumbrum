@@ -3,46 +3,67 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="robots" content="noindex, nofollow" />
   <title>brumbrum</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>" />
-
-  <!-- PWA -->
+  <link rel="icon" href="/icon.svg" type="image/svg+xml" />
   <link rel="manifest" href="/manifest.webmanifest" />
-  <meta name="theme-color" content="#0d0c0a" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <meta name="theme-color" content="#161616" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="brumbrum" />
-
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
-  <!-- caja de chat compacta, estilo Chatango embebible -->
-  <div class="chatbox">
-    <header>
-      <h1>brumbrum</h1>
-      <span class="meta">sala <b id="room"></b></span>
-      <span class="meta">tú: <b id="me"></b></span>
-      <input type="color" id="mycolor" class="swatch" title="cambia tu color" />
-      <button id="mute" class="iconbtn" type="button">🔔</button>
-    </header>
-
-    <div id="presence" class="presence"></div>
-
-    <ul id="messages"></ul>
-
-    <form id="composer" autocomplete="off">
-      <input id="body" type="text" placeholder="escribe algo…" maxlength="1000" />
-      <button type="submit">piu</button>
+  <!-- 1. entrada: nombre + contraseña del club -->
+  <section id="entrada" class="view" hidden>
+    <div class="k">chat anónimo por salas · meowrhino.studio</div>
+    <div class="title">brumbrum<i></i></div>
+    <div class="dots" id="dots"></div>
+    <div class="road"></div>
+    <form id="login" autocomplete="off">
+      <label class="k" for="name">nombre</label><input id="name" maxlength="25" required autocomplete="username" />
+      <label class="k" for="password">password</label><input id="password" type="password" required autocomplete="current-password" />
+      <span></span><button type="submit">entrar →</button>
+      <span></span><span id="login-error" class="err"></span>
     </form>
-  </div>
+  </section>
+
+  <!-- 2. lobby: salas y cuánta gente hay -->
+  <section id="lobby" class="view" hidden>
+    <header class="top">
+      <span class="title small">brumbrum<i></i></span>
+      <span class="k">tú: <b id="me-lobby"></b> · <a href="#" id="logout">salir</a></span>
+    </header>
+    <div class="road"></div>
+    <ul id="rooms" class="rooms"></ul>
+    <form id="goto" class="goto" autocomplete="off">
+      <label class="k" for="room-name">otra sala</label>
+      <input id="room-name" placeholder="nombre-de-sala" pattern="[a-z0-9_-]{1,32}" maxlength="32" required />
+      <button type="submit">ir →</button>
+    </form>
+  </section>
+
+  <!-- 3. sala: avatares + burbujas, estilo clip de Live -->
+  <section id="sala" class="view" hidden>
+    <header class="top">
+      <a href="#" id="back" class="k">← salas</a>
+      <span>#<b id="room"></b> <span class="k" id="count"></span></span>
+      <span class="tools">
+        <span id="presence" class="presence"></span>
+        <input type="color" id="mycolor" class="swatch" title="tu color" />
+        <button id="mute" class="iconbtn" type="button">🔔</button>
+      </span>
+    </header>
+    <ul id="messages"></ul>
+    <form id="composer" autocomplete="off">
+      <input id="body" type="text" placeholder="escribe…" maxlength="1000" />
+      <button type="submit">enviar</button>
+    </form>
+  </section>
 
   <script type="module" src="/js/main.js"></script>
   <script>
-    // Registrar el service worker (PWA instalable + carga offline del shell).
-    if ("serviceWorker" in navigator) {
-      addEventListener("load", () => navigator.serviceWorker.register("/sw.js"));
-    }
+    if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("/sw.js"));
   </script>
 </body>
 </html>

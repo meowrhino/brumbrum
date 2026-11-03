@@ -1,65 +1,120 @@
-// Punto de entrada: lee sala + nombre + color, conecta el WebSocket y cablea el
-// formulario y el selector de color.
+// Tres vistas en una página: entrada → lobby → sala. La sala va en el hash
+// (#ciudad), así una URL compartida abre esa sala directamente.
 import { $ } from "./util.js";
-import { getRoom, getName, getColor, setColor } from "./session.js";
+import { me, login, logout, getRoom, getColor, setColor } from "./session.js";
 import { connectRoom } from "./ws.js";
-import { addMessage, renderHistory, applyColor, setOnline } from "./render.js";
+import { addMessage, renderHistory, applyColor, setOnline, setMe } from "./render.js";
 import * as alerts from "./alerts.js";
 
-const room = getRoom();
-const name = getName();
-let color = getColor();
+let name = null;
+let conn = null;
 
-$("#room").textContent = room;
-$("#me").textContent = name;
-$("#me").style.color = color;
+function show(id) {
+  for (const v of document.querySelectorAll(".view")) v.hidden = v.id !== id;
+}
 
-const picker = $("#mycolor");
-picker.value = color;
+async function boot() {
+  name = await me();
+  if (!name) return show("entrada");
+  setMe(name);
+  route();
+}
 
-alerts.setup({ emoji: "💬", base: "brumbrum" });
+function route() {
+  const room = getRoom();
+  if (room && /^[a-z0-9_-]{1,32}$/.test(room)) openRoom(room);
+  else openLobby();
+}
 
-const conn = connectRoom({
-  room,
-  name,
-  color,
-  onHistory: (messages, profiles, online) => {
-    renderHistory(messages, profiles);
-    setOnline(online);
-  },
-  onMessage: (m) => {
-    addMessage(m);
-    // sonido/badge/notificación solo para mensajes de OTRA persona
-    if (m.kind !== "system" && m.author !== name) alerts.incoming(m.author, m.body);
-  },
-  onColor: ({ name, color }) => applyColor(name, color),
-  onPresence: setOnline,
+// --- entrada ---------------------------------------------------------------
+$("#login").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("#login-error").textContent = "";
+  try {
+    name = await login($("#name").value, $("#password").value);
+    setMe(name);
+    route();
+  } catch (err) {
+    $("#login-error").textContent = err.message;
+  }
+});
+// puntitos de colores bajo el nombre: decorativos, un color por letra
+$("#dots").innerHTML = ["#f2a93b", "#4f8fe8", "#7bd389", "#e86aa0", "#c0c0c0"]
+  .map((c) => `<b style="--c:${c}"></b>`).join("");
+
+// --- lobby -----------------------------------------------------------------
+async function openLobby() {
+  closeRoom();
+  show("lobby");
+  $("#me-lobby").textContent = name;
+  const rooms = await (await fetch("/api/rooms")).json();
+  const ul = $("#rooms");
+  ul.innerHTML = "";
+  for (const { room, online } of rooms) {
+    const li = document.createElement("li");
+    const a = document.createElement("a");
+    a.href = `#${room}`;
+    const label = document.createElement("span");
+    label.textContent = `#${room}`;
+    const n = document.createElement("span");
+    n.className = "n";
+    n.title = `${online} en línea`;
+    for (let i = 0; i < online; i++) n.appendChild(document.createElement("b"));
+    a.append(label, n);
+    li.appendChild(a);
+    ul.appendChild(li);
+  }
+}
+$("#goto").addEventListener("submit", (e) => {
+  e.preventDefault();
+  location.hash = $("#room-name").value.trim().toLowerCase();
+});
+$("#logout").addEventListener("click", (e) => {
+  e.preventDefault();
+  logout();
+  name = null;
+  location.hash = "";
+  show("entrada");
 });
 
-// Mientras arrastro el selector (`input` dispara en cada tic): recoloreo mi
-// nombre al instante en local, SIN tocar la red.
-picker.addEventListener("input", () => {
-  color = picker.value;
-  $("#me").style.color = color;
-  applyColor(name, color);
-});
+// --- sala ------------------------------------------------------------------
+function openRoom(room) {
+  closeRoom();
+  show("sala");
+  $("#room").textContent = room;
+  let color = getColor(name);
+  const picker = $("#mycolor");
+  picker.value = color;
+  alerts.setup({ emoji: "🏍", base: `#${room}` });
 
-// Al soltar/cerrar el selector (`change` dispara una vez): lo recuerdo y aviso
-// a la sala una sola vez para que todos lo vean.
-picker.addEventListener("change", () => {
-  color = picker.value;
-  setColor(color);
-  $("#me").style.color = color;
-  applyColor(name, color);
-  conn.setColor(color);
-});
+  conn = connectRoom({
+    room, name, color,
+    onHistory: (messages, profiles, online) => { renderHistory(messages, profiles); setOnline(online); },
+    onMessage: (m) => {
+      addMessage(m);
+      if (m.kind !== "system" && m.author !== name) alerts.incoming(m.author, m.body);
+    },
+    onColor: ({ name, color }) => applyColor(name, color),
+    onPresence: setOnline,
+  });
 
+  picker.oninput = () => applyColor(name, picker.value);
+  picker.onchange = () => { color = picker.value; setColor(color); applyColor(name, color); conn.setColor(color); };
+}
+function closeRoom() {
+  conn?.close();
+  conn = null;
+}
 $("#composer").addEventListener("submit", (e) => {
   e.preventDefault();
   const input = $("#body");
   const body = input.value.trim();
   if (!body) return;
-  alerts.askNotifPermission(); // gesto del usuario → buen momento para pedir permiso
+  alerts.askNotifPermission();
   conn.send(body);
   input.value = "";
 });
+$("#back").addEventListener("click", (e) => { e.preventDefault(); location.hash = ""; });
+
+addEventListener("hashchange", () => { if (name) route(); });
+boot();

@@ -213,6 +213,11 @@ export class ConversationDO extends DurableObject<Env> {
     this.broadcast(JSON.stringify({ type: "cleared" }));
   }
 
+  // RPC desde el Worker (lobby): cuánta gente hay ahora en esta sala.
+  online(): number {
+    return this.onlineNames().length;
+  }
+
   // --- helpers -------------------------------------------------------------
 
   // Registra la conexión y decide si anunciarla (fuera de la ventana). El color

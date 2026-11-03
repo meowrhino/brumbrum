@@ -6,6 +6,7 @@
 
 export function connectRoom({ room, name, color, onHistory, onMessage, onColor, onPresence }) {
   let ws;
+  let closed = false;
   const proto = location.protocol === "https:" ? "wss" : "ws";
   const url =
     `${proto}://${location.host}/ws` +
@@ -23,7 +24,7 @@ export function connectRoom({ room, name, color, onHistory, onMessage, onColor, 
       else if (data.type === "presence") onPresence?.(data.online || []);
     };
     // El DO hiberna o la red cae → el socket se cierra; reabrimos solos.
-    ws.onclose = () => setTimeout(open, 1000);
+    ws.onclose = () => { if (!closed) setTimeout(open, 1000); };
   }
   open();
 
@@ -32,6 +33,10 @@ export function connectRoom({ room, name, color, onHistory, onMessage, onColor, 
       if (ws?.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ type: "msg", body }));
       }
+    },
+    close() {
+      closed = true;
+      ws?.close();
     },
     setColor(color) {
       if (ws?.readyState === WebSocket.OPEN) {

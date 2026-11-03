@@ -1,196 +1,85 @@
-/* brumbrum — caja de chat compacta estilo Chatango, sobre la paleta de twoitter
-   (negro cálido + dorado + JetBrains Mono + textura de puntos). */
-
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+/* brumbrum — estética B: la de petra (session view de Ableton: gris neutro,
+   superficies planas, CERO border-radius, etiquetas diminutas) + las burbujas
+   del chat de Dollars convertidas en clips de Live: cada persona tiene un color
+   y su avatar y sus mensajes son bloques de ese color con texto oscuro encima. */
+@font-face { font-family: 'JetBrains Mono'; font-weight: 400; font-display: swap; src: url('/fonts/jetbrains-mono-400.woff2') format('woff2'); }
+@font-face { font-family: 'JetBrains Mono'; font-weight: 500; font-display: swap; src: url('/fonts/jetbrains-mono-500.woff2') format('woff2'); }
 
 :root {
-  --bg: #0d0c0a;
-  --surface: #16130f;
-  --border: #2a2622;
-  --hairline: #221e1a;
-  --text: #d8d2c4;
-  --text-dim: #a89e8b;
-  --muted: #6b6357;
-  --accent: #e8b04a;
-  --accent-dim: #b58836;
-  --dots: #1a1612;
+  --bg: #161616; --surface: #1e1e1e; --border: #333; --hairline: #2a2a2a;
+  --text: #d6d6d6; --dim: #9b9b9b; --muted: #676767; --ink: #141414; --danger: #d96c6c;
   --mono: 'JetBrains Mono', 'Menlo', monospace;
-  --radius: 6px;
 }
-
-* { box-sizing: border-box; }
-
+* { box-sizing: border-box; margin: 0; padding: 0; }
+[hidden] { display: none !important; }
 html, body { height: 100%; }
+body { background: var(--bg); color: var(--text); font: 14px/1.6 var(--mono); }
+a { color: inherit; text-decoration: none; }
+a:hover, button:hover { color: #fff; }
+input, button { font: inherit; color: inherit; background: transparent; border: 0; }
+input { height: 32px; border-bottom: 1px solid var(--border); padding: 0 4px; min-width: 0; }
+input:focus { outline: 0; border-color: #fff; }
+button { color: var(--dim); cursor: pointer; }
+.k { font-size: 10px; color: var(--muted); letter-spacing: .08em; }
+.err { font-size: 11px; color: var(--danger); }
 
-body {
-  margin: 0;
-  font-family: var(--mono);
-  font-size: 14px;
-  line-height: 1.5;
-  background-color: var(--bg);
-  color: var(--text);
-  -webkit-font-smoothing: antialiased;
-  display: flex;
-  /* la caja se centra: en una web embebida ocuparía su hueco; aquí, la pantalla */
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-}
+.view { min-height: 100%; display: flex; flex-direction: column; padding: 16px; gap: 16px; max-width: 760px; margin: 0 auto; }
+#entrada { justify-content: center; }
 
-/* textura de fondo (viñeta + puntitos) anclada al viewport, como en twoitter */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-color: var(--bg);
-  background-image:
-    radial-gradient(ellipse 55% 50% at 50% 45%, var(--bg) 0%, var(--bg) 30%, transparent 75%),
-    radial-gradient(var(--dots) 1px, transparent 1px);
-  background-size: auto, 22px 22px;
-}
+/* nombre + cuadradito de color = el clip */
+.title { font-size: clamp(28px, 6vw, 44px); font-weight: 500; letter-spacing: -.02em; line-height: 1; }
+.title.small { font-size: 16px; }
+.title i { display: inline-block; width: .28em; height: .28em; margin-left: .15em; background: #c0c0c0; }
+.dots { display: flex; gap: 3px; }
+.dots b { width: 8px; height: 8px; background: var(--c); }
 
-.chatbox {
-  width: min(520px, 100%);
-  height: min(680px, 100%);
-  display: flex;
-  flex-direction: column;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+/* la carretera de noche: una línea y las marcas pasando */
+.road { position: relative; height: 1px; background: #fff; margin: 16px 0; }
+.road::after {
+  content: ''; position: absolute; left: 0; right: 0; top: -3px; height: 1px; opacity: .4;
+  background: repeating-linear-gradient(90deg, #fff 0 24px, transparent 24px 48px);
+  animation: drive 1.2s linear infinite;
 }
+@keyframes drive { to { background-position: -48px 0; } }
+@media (prefers-reduced-motion: reduce) { .road::after { animation: none; } }
 
-header {
-  display: flex;
-  gap: .75rem;
-  align-items: baseline;
-  padding: .55rem .8rem;
-  border-bottom: 1px solid var(--border);
-  background: linear-gradient(var(--surface), var(--bg));
-}
-header h1 { margin: 0; font-size: .95rem; font-weight: 600; color: var(--accent); }
-header .meta { font-size: .72rem; color: var(--muted); }
-header .meta b { color: var(--text-dim); font-weight: 500; }
+#login { display: grid; grid-template-columns: max-content 1fr; gap: 12px 16px; align-items: center; max-width: 480px; }
+#login button { justify-self: start; }
 
-/* barra de presencia: quién está en línea (puntito de color + nombre) */
-.presence {
-  display: flex;
-  align-items: center;
-  gap: .55rem;
-  padding: .35rem .8rem;
-  border-bottom: 1px solid var(--hairline);
-  background: var(--bg);
-  font-size: .72rem;
-  color: var(--muted);
-  overflow-x: auto;
-  white-space: nowrap;
-}
-.presence-label { flex-shrink: 0; }
-.presence-chip { display: inline-flex; align-items: center; gap: .3rem; color: var(--text-dim); }
-.presence-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  display: inline-block;
-  box-shadow: 0 0 4px currentColor;
-}
+.top { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+.tools { display: flex; align-items: center; gap: 8px; }
 
-/* mensajes: filas densas, una por línea — el look "chatbox" de Chatango */
-#messages {
-  flex: 1;
-  overflow-y: auto;
-  list-style: none;
-  margin: 0;
-  padding: .5rem .7rem;
-}
-.msg {
-  padding: .08rem 0;
-  word-break: break-word;
-}
-.msg:hover { background: var(--hairline); }
-.msg .time { color: var(--muted); font-size: .7rem; margin-right: .45rem; }
-.msg .name { font-weight: 600; margin-right: .4rem; }
-.msg .name::after { content: ':'; color: var(--muted); font-weight: 400; }
-.msg .body { color: var(--text); }
-.msg .body .link { color: var(--accent); text-decoration: underline; word-break: break-all; }
+/* lobby: una fila por sala, y a la derecha un cuadrito por persona dentro */
+.rooms { list-style: none; display: flex; flex-direction: column; }
+.rooms li a { display: flex; justify-content: space-between; align-items: center; padding: 12px 4px; border-bottom: 1px solid var(--hairline); }
+.rooms li a:hover { background: var(--surface); }
+.rooms .n { display: flex; gap: 3px; }
+.rooms .n b { width: 8px; height: 8px; background: var(--dim); }
+.goto { display: grid; grid-template-columns: max-content 1fr max-content; gap: 12px; align-items: center; }
 
-#composer {
-  display: flex;
-  gap: .5rem;
-  padding: .6rem .7rem;
-  border-top: 1px solid var(--border);
-  background: var(--bg);
-}
-#body {
-  flex: 1;
-  min-width: 0;
-  font: inherit;
-  color: var(--text);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: .45rem .6rem;
-}
-#body::placeholder { color: var(--muted); }
-#body:focus { outline: none; border-color: var(--accent); }
-#composer button {
-  font: inherit;
-  font-weight: 600;
-  color: var(--bg);
-  background: var(--accent);
-  border: 0;
-  border-radius: var(--radius);
-  padding: 0 1rem;
-  cursor: pointer;
-}
-#composer button:hover { background: var(--accent-dim); }
+/* sala */
+#sala { height: 100%; }
+.presence { display: flex; gap: 3px; }
+.presence-dot { width: 8px; height: 8px; background: var(--c); display: inline-block; }
+.presence-chip span:last-child { display: none; } /* el nombre va en el title */
+.swatch { width: 18px; height: 18px; padding: 0; border: 0; cursor: pointer; }
+.swatch::-webkit-color-swatch-wrapper { padding: 0; } .swatch::-webkit-color-swatch { border: 0; }
+.iconbtn { font-size: 14px; }
+.iconbtn.off { opacity: .4; }
 
-/* selector de color propio: un cuadradito a la derecha de la cabecera */
-.swatch {
-  margin-left: auto;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  cursor: pointer;
-  align-self: center;
-}
-/* botón de icono (silenciar) en la cabecera */
-.iconbtn {
-  background: none;
-  border: 0;
-  padding: 0 .1rem;
-  font-size: .95rem;
-  line-height: 1;
-  cursor: pointer;
-}
-.swatch::-webkit-color-swatch-wrapper { padding: 2px; }
-.swatch::-webkit-color-swatch { border: none; border-radius: 2px; }
-.swatch::-moz-color-swatch { border: none; border-radius: 2px; }
+#messages { list-style: none; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 4px 0; }
+.msg { display: grid; grid-template-columns: 40px 1fr; gap: 10px; align-items: start; }
+.msg.me { grid-template-columns: 1fr 40px; }
+.msg.me .avatar { order: 2; } .msg.me .bubble { justify-self: end; }
+.avatar { width: 40px; height: 40px; background: var(--c); color: var(--ink); padding: 6px; }
+.avatar svg { width: 100%; height: 100%; display: block; }
+.bubble { justify-self: start; max-width: 80%; background: var(--c); color: var(--ink); padding: 8px 12px; overflow-wrap: anywhere; }
+.bubble .name { display: block; font-size: 10px; opacity: .65; margin-bottom: 2px; }
+.bubble .link { text-decoration: underline; text-underline-offset: 3px; }
+.msg.system { display: block; font-size: 10px; color: var(--muted); padding-left: 50px; }
+.daysep { text-align: center; font-size: 10px; color: var(--muted); }
 
-/* separador de día: la etiqueta centrada entre dos hilos */
-.daysep {
-  display: flex;
-  align-items: center;
-  gap: .6rem;
-  margin: .55rem 0;
-  color: var(--muted);
-  font-size: .7rem;
-  text-transform: lowercase;
-}
-.daysep::before,
-.daysep::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--hairline);
-}
+#composer { display: flex; gap: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
+#composer input { flex: 1; border: 0; }
 
-/* aviso de conexión (mensaje de sistema) */
-.msg.system { color: var(--muted); font-style: italic; }
-.msg.system .sys { margin-left: .1rem; }
+@media (max-width: 480px) { .bubble { max-width: 100%; } .msg.system { padding-left: 0; } }

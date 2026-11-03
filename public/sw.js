@@ -13,12 +13,10 @@ const SHELL = [
   "/js/session.js",
   "/js/ws.js",
   "/js/render.js",
+  "/js/avatar.js",
   "/js/alerts.js",
   "/manifest.webmanifest",
   "/icon.svg",
-  "/icon-192.png",
-  "/icon-512.png",
-  "/apple-touch-icon.png",
 ];
 
 self.addEventListener("install", (e) => {
