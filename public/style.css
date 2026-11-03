@@ -81,8 +81,9 @@ button { color: var(--dim); cursor: pointer; }
 .me-chip { color: var(--text); }
 
 #messages { list-style: none; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding: 4px 0; }
-.msg { display: grid; grid-template-columns: 56px 1fr; gap: 12px; align-items: start; }
-.msg.me { grid-template-columns: 1fr 56px; }
+.msg { display: grid; grid-template-columns: 56px 1fr auto; gap: 12px; align-items: start; }
+.msg.me { grid-template-columns: auto 1fr 56px; }
+.msg.me .mod { order: 0; } .msg.me .bubble { order: 1; }
 .msg.me .who { order: 2; } .msg.me .bubble { justify-self: end; }
 .who { display: flex; flex-direction: column; align-items: center; gap: 3px; }
 .who .name { font-size: 10px; color: var(--dim); max-width: 56px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -103,6 +104,11 @@ button { color: var(--dim); cursor: pointer; }
 .msg.system { display: block; font-size: 10px; color: var(--muted); padding-left: 68px; }
 .daysep { text-align: center; font-size: 10px; color: var(--muted); }
 
+#typing { font-size: 10px; color: var(--muted); min-height: 14px; padding: 2px 0; }
+.mod { display: none; gap: 2px; align-self: start; }
+.msg:hover .mod { display: flex; }
+.mod button { background: var(--surface); border: 1px solid var(--border); color: var(--dim); font-size: 11px; padding: 0 6px; cursor: pointer; }
+.mod button:hover { color: var(--danger); }
 #composer { display: flex; gap: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
 #composer input { flex: 1; border: 0; }
 

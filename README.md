@@ -50,8 +50,13 @@ npx wrangler secret put CLUB_PASSWORD   # la contraseña del club
 npm run deploy
 ```
 
+## moderación
+
+los nombres de `MODS` en `wrangler.toml` (separados por coma) ven en cada
+mensaje `×` (borrar) y `⇥` (expulsar 10 min de esa sala). "escribiendo…" es
+efímero: el DO lo reenvía a los demás y no se guarda.
+
 ## pendiente
 
-- "escribiendo…" (broadcast efímero desde el DO)
 - salas creadas por URL en el lobby (hoy solo salen las 6 fijas) → LobbyDO
-- host de sala: expulsar / silenciar / borrar
+- silenciar (hoy solo borrar/expulsar)

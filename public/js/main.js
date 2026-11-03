@@ -3,11 +3,11 @@
 import { $ } from "./util.js";
 import { me, login, logout, saveProfile, getRoom } from "./session.js";
 import { connectRoom } from "./ws.js";
-import { addMessage, renderHistory, applyColor, applyAvatar, setOnline, setMe } from "./render.js";
+import { addMessage, renderHistory, applyColor, applyAvatar, setOnline, setMe, setModActions, removeMessage, showTyping, clearTyping } from "./render.js";
 import { avatarSvg, parse, LAYERS } from "./avatar.js";
 import * as alerts from "./alerts.js";
 
-let profile = null; // { name, color, avatar }
+let profile = null; // { name, color, avatar, mod }
 let conn = null;
 
 function show(id) {
@@ -17,7 +17,7 @@ function show(id) {
 async function boot() {
   profile = await me();
   if (!profile.name) return show("entrada");
-  setMe(profile.name);
+  setMe(profile.name, profile.mod);
   route();
 }
 
@@ -33,7 +33,7 @@ $("#login").addEventListener("submit", async (e) => {
   $("#login-error").textContent = "";
   try {
     profile = await login($("#name").value, $("#password").value, $("#club").value);
-    setMe(profile.name);
+    setMe(profile.name, profile.mod);
     // nombre nuevo → primero te haces el avatar
     profile.created ? openAvatar() : route();
   } catch (err) {
@@ -140,7 +140,11 @@ function openRoom(room) {
     onColor: ({ name, color }) => applyColor(name, color),
     onAvatar: ({ name, avatar }) => applyAvatar(name, avatar),
     onPresence: setOnline,
+    onTyping: showTyping,
+    onDelete: removeMessage,
+    onKicked: () => { alert("te han expulsado de la sala 10 min"); location.hash = ""; },
   });
+  setModActions({ del: (seq) => conn?.del(seq), kick: (name) => conn?.kick(name) });
 
   picker.oninput = () => applyColor(profile.name, picker.value);
   picker.onchange = () => {
@@ -152,7 +156,14 @@ function openRoom(room) {
 function closeRoom() {
   conn?.close();
   conn = null;
+  clearTyping();
 }
+// "escribiendo…": como mucho un aviso cada 2s mientras tecleas.
+let lastTyping = 0;
+$("#body").addEventListener("input", () => {
+  const now = Date.now();
+  if ($("#body").value && now - lastTyping > 2000) { lastTyping = now; conn?.typing(); }
+});
 $("#composer").addEventListener("submit", (e) => {
   e.preventDefault();
   const input = $("#body");

@@ -11,7 +11,11 @@ export interface Env {
   // de identidad y la contraseña única del club (la puerta, como en Dollars).
   AUTH_SECRET: string;
   CLUB_PASSWORD: string;
+  // Nombres de moderadores, separados por coma (wrangler.toml [vars]).
+  MODS?: string;
 }
+
+const isMod = (env: Env, name: string) => (env.MODS || "").split(",").map((s) => s.trim()).includes(name);
 
 export { ConversationDO, UsersDO };
 
@@ -47,6 +51,7 @@ export default {
       target.searchParams.set("name", user);
       target.searchParams.set("color", profile.color);
       target.searchParams.set("avatar", profile.avatar);
+      target.searchParams.set("mod", isMod(env, user) ? "1" : "0");
       return env.CHAT.get(env.CHAT.idFromName(room)).fetch(new Request(target, request));
     }
 
@@ -59,12 +64,12 @@ export default {
       if (String(password || "").length < 4) return json({ error: "tu contraseña: 4 caracteres mínimo" }, { status: 400 });
       const p = await users.auth(clean, String(password), defaultColor(clean));
       if (!p) return json({ error: "ese nombre ya es de alguien (o no es tu contraseña)" }, { status: 403 });
-      return json({ name: clean, ...p }, { headers: { "Set-Cookie": await setUserCookie(clean, env.AUTH_SECRET) } });
+      return json({ name: clean, mod: isMod(env, clean), ...p }, { headers: { "Set-Cookie": await setUserCookie(clean, env.AUTH_SECRET) } });
     }
 
     if (url.pathname === "/api/me") {
       if (!user) return json({ name: null });
-      return json({ name: user, ...((await users.getProfile(user)) ?? { color: defaultColor(user), avatar: "000" }) });
+      return json({ name: user, mod: isMod(env, user), ...((await users.getProfile(user)) ?? { color: defaultColor(user), avatar: "000" }) });
     }
 
     // La cookie es HttpOnly: solo el servidor puede borrarla.

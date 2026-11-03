@@ -11,6 +11,10 @@ routes = [
   { pattern = "brumbrum.meowrhino.studio", custom_domain = true },
 ]
 
+# Moderadores (pueden borrar mensajes y expulsar 10 min), separados por coma.
+[vars]
+MODS = "manu"
+
 [assets]
 directory = "./public"
 binding = "ASSETS"

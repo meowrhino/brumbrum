@@ -11,11 +11,36 @@ let avatars = {};
 let lastDay = null;
 let online = [];
 let myName = "";
+let isMod = false;
+let onMod = null; // { del(seq), kick(name) }
+const typing = new Map(); // name → timeout
 
 const colorOf = (name) => colors[name] || colorFor(name);
 const avatarOf = (name) => avatars[name] || "000";
 
-export function setMe(name) { myName = name; }
+export function setMe(name, mod = false) { myName = name; isMod = mod; }
+export function setModActions(actions) { onMod = actions; }
+
+export function removeMessage(seq) {
+  list().querySelector(`[data-seq="${seq}"]`)?.remove();
+}
+
+// "x está escribiendo…" durante 4s desde el último aviso.
+export function showTyping(name) {
+  if (name === myName) return;
+  clearTimeout(typing.get(name));
+  typing.set(name, setTimeout(() => { typing.delete(name); paintTyping(); }, 4000));
+  paintTyping();
+}
+function paintTyping() {
+  const names = [...typing.keys()];
+  $("#typing").textContent = names.length ? `${names.join(", ")} está escribiendo…` : "";
+}
+export function clearTyping() {
+  for (const t of typing.values()) clearTimeout(t);
+  typing.clear();
+  paintTyping();
+}
 
 export function setOnline(names) {
   online = names || [];
@@ -57,6 +82,7 @@ export function addMessage(m) {
   } else {
     li.className = m.author === myName ? "msg me" : "msg";
     li.dataset.author = m.author;
+    li.dataset.seq = m.seq;
     li.style.setProperty("--c", colorOf(m.author));
 
     const who = document.createElement("div");
@@ -75,9 +101,26 @@ export function addMessage(m) {
     linkifyInto(bubble, m.body);
 
     li.append(who, bubble);
+    if (isMod) li.appendChild(modButtons(m));
   }
   box.appendChild(li);
   if (wasAtBottom) box.scrollTop = box.scrollHeight;
+}
+
+function modButtons(m) {
+  const box = document.createElement("span");
+  box.className = "mod";
+  const del = document.createElement("button");
+  del.type = "button"; del.textContent = "×"; del.title = "borrar mensaje";
+  del.onclick = () => onMod?.del(m.seq);
+  box.appendChild(del);
+  if (m.author !== myName) {
+    const kick = document.createElement("button");
+    kick.type = "button"; kick.textContent = "⇥"; kick.title = `expulsar a ${m.author} 10 min`;
+    kick.onclick = () => confirm(`¿expulsar a ${m.author} 10 min?`) && onMod?.kick(m.author);
+    box.appendChild(kick);
+  }
+  return box;
 }
 
 export function renderHistory(messages, profiles, avs) {

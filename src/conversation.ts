@@ -17,7 +17,11 @@ interface Attachment {
   name: string;
   color: string;
   ip: string;
+  mod: boolean;
 }
+
+// Expulsión: cuánto tiempo no puede volver a entrar.
+const BAN_MS = 10 * 60 * 1000;
 
 // "se ha conectado" como mucho una vez por persona cada ventana (evita spam de
 // refresco/reconexión). "se ha desconectado" con gracia (absorbe caídas breves
@@ -92,6 +96,8 @@ export class ConversationDO extends DurableObject<Env> {
           leaveAt INTEGER NOT NULL
         );
       `);
+      // brumbrum: expulsados por un mod (name → hasta cuándo).
+      sql.exec("CREATE TABLE IF NOT EXISTS banned (name TEXT PRIMARY KEY, until INTEGER NOT NULL)");
     });
   }
 
@@ -106,6 +112,18 @@ export class ConversationDO extends DurableObject<Env> {
     const color = cleanColor(url.searchParams.get("color")) ?? defaultColor(name);
     const avatar = (url.searchParams.get("avatar") || "000").slice(0, 3);
     const ip = request.headers.get("CF-Connecting-IP") || "local";
+    const mod = url.searchParams.get("mod") === "1";
+
+    const { 0: client, 1: server } = new WebSocketPair();
+    // Expulsado: le cerramos con 4001 y el cliente no reintenta.
+    const ban = this.ctx.storage.sql
+      .exec<{ until: number }>("SELECT until FROM banned WHERE name = ? AND until > ?", name, Date.now())
+      .toArray();
+    if (ban.length) {
+      server.accept();
+      server.close(4001, "expulsado");
+      return new Response(null, { status: 101, webSocket: client });
+    }
 
     // El color del Worker es autoritativo (viene del UserDO) → lo refrescamos
     // siempre; `lastJoinTs` solo avanza cuando anunciamos la conexión.
@@ -113,9 +131,8 @@ export class ConversationDO extends DurableObject<Env> {
     // Si vuelve antes de expirar la gracia, cancela su "se ha desconectado".
     this.ctx.storage.sql.exec("DELETE FROM pending_leave WHERE name = ?", name);
 
-    const { 0: client, 1: server } = new WebSocketPair();
     this.ctx.acceptWebSocket(server);
-    server.serializeAttachment({ name, color, ip } satisfies Attachment);
+    server.serializeAttachment({ name, color, ip, mod } satisfies Attachment);
 
     server.send(
       JSON.stringify({
@@ -138,7 +155,7 @@ export class ConversationDO extends DurableObject<Env> {
 
   async webSocketMessage(ws: WebSocket, raw: string | ArrayBuffer): Promise<void> {
     if (typeof raw !== "string") return;
-    let data: { type?: string; body?: unknown; color?: unknown };
+    let data: { type?: string; body?: unknown; color?: unknown; seq?: unknown; name?: unknown };
     try {
       data = JSON.parse(raw);
     } catch {
@@ -151,6 +168,32 @@ export class ConversationDO extends DurableObject<Env> {
 
     // Rate-limit por IP: descarta en silencio el exceso (mensajes y colores).
     if (!this.allow(ip)) return;
+
+    // "escribiendo…": efímero, no se guarda; a todos menos a quien escribe.
+    if (data.type === "typing") {
+      this.broadcast(JSON.stringify({ type: "typing", name: author }), ws);
+      return;
+    }
+
+    // Moderación (solo mods; `mod` lo decide el Worker por MODS).
+    if (data.type === "del" && att?.mod && typeof data.seq === "number") {
+      this.ctx.storage.sql.exec("DELETE FROM messages WHERE seq = ?", data.seq);
+      this.broadcast(JSON.stringify({ type: "del", seq: data.seq }));
+      return;
+    }
+    if (data.type === "kick" && att?.mod && typeof data.name === "string" && data.name !== author) {
+      this.ctx.storage.sql.exec(
+        "INSERT INTO banned (name, until) VALUES (?, ?) ON CONFLICT(name) DO UPDATE SET until = excluded.until",
+        data.name,
+        Date.now() + BAN_MS,
+      );
+      for (const peer of this.ctx.getWebSockets()) {
+        if ((peer.deserializeAttachment() as Attachment | null)?.name === data.name) peer.close(4001, "expulsado");
+      }
+      this.system(data.name, `ha sido expulsado por ${author} (10 min)`);
+      this.broadcastPresence();
+      return;
+    }
 
     // Cambio de color en vivo: persiste y difunde (con dedupe del no-op).
     if (data.type === "color") {
@@ -166,7 +209,7 @@ export class ConversationDO extends DurableObject<Env> {
         author,
         color,
       );
-      ws.serializeAttachment({ name: author, color, ip } satisfies Attachment);
+      ws.serializeAttachment({ ...att, name: author, color, ip } as Attachment);
       this.broadcast(JSON.stringify({ type: "color", name: author, color }));
       return;
     }
@@ -289,8 +332,9 @@ export class ConversationDO extends DurableObject<Env> {
     this.append(author, body, "system");
   }
 
-  private broadcast(blob: string): void {
+  private broadcast(blob: string, exclude?: WebSocket): void {
     for (const peer of this.ctx.getWebSockets()) {
+      if (peer === exclude) continue;
       try {
         peer.send(blob);
       } catch {
