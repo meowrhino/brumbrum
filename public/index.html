@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>brumbrum</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>" />
+
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#0d0c0a" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="brumbrum" />
+
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <!-- caja de chat compacta, estilo Chatango embebible -->
+  <div class="chatbox">
+    <header>
+      <h1>brumbrum</h1>
+      <span class="meta">sala <b id="room"></b></span>
+      <span class="meta">tú: <b id="me"></b></span>
+      <input type="color" id="mycolor" class="swatch" title="cambia tu color" />
+      <button id="mute" class="iconbtn" type="button">🔔</button>
+    </header>
+
+    <div id="presence" class="presence"></div>
+
+    <ul id="messages"></ul>
+
+    <form id="composer" autocomplete="off">
+      <input id="body" type="text" placeholder="escribe algo…" maxlength="1000" />
+      <button type="submit">piu</button>
+    </form>
+  </div>
+
+  <script type="module" src="/js/main.js"></script>
+  <script>
+    // Registrar el service worker (PWA instalable + carga offline del shell).
+    if ("serviceWorker" in navigator) {
+      addEventListener("load", () => navigator.serviceWorker.register("/sw.js"));
+    }
+  </script>
+</body>
+</html>

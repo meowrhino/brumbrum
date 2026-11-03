@@ -1,0 +1,25 @@
+name = "brumbrum"
+main = "src/index.ts"
+compatibility_date = "2026-06-01"
+
+# Mantener también la URL *.workers.dev como respaldo estable.
+workers_dev = true
+
+# Dominio bonito. Requiere que meowrhino.studio sea una zona de esta cuenta de
+# Cloudflare; Wrangler crea el registro DNS + el certificado automáticamente.
+routes = [
+  { pattern = "brumbrum.meowrhino.studio", custom_domain = true },
+]
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = true
+
+[[durable_objects.bindings]]
+name = "CHAT"
+class_name = "ConversationDO"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["ConversationDO"]
