@@ -4,8 +4,9 @@ import type { Env } from "./index";
 // Perfil que viaja al front y a las salas.
 export type Profile = { color: string; avatar: string };
 
-// Código de avatar: 3 dígitos (pelo, ojos, accesorio), ver public/js/avatar.js.
-export const AVATAR_RE = /^[0-9]{3}$/;
+// Código de avatar: índices separados por punto (ver public/js/poporing.js);
+// el front tolera cualquier cosa (lo que no entiende → 0), aquí solo acotamos.
+export const AVATAR_RE = /^[0-9.]{1,64}$/;
 
 // Un solo DO ("users") con la lista de nombres reservados: el primero que
 // entra con un nombre lo registra con SU contraseña; a partir de ahí hace
@@ -20,7 +21,7 @@ export class UsersDO extends DurableObject<Env> {
           hash    TEXT NOT NULL,
           salt    TEXT NOT NULL,
           color   TEXT NOT NULL,
-          avatar  TEXT NOT NULL DEFAULT '000',
+          avatar  TEXT NOT NULL DEFAULT '0',
           created INTEGER NOT NULL
         );
       `);
@@ -42,14 +43,25 @@ export class UsersDO extends DurableObject<Env> {
     }
     const salt = crypto.randomUUID();
     this.ctx.storage.sql.exec(
-      "INSERT INTO users (name, hash, salt, color, avatar, created) VALUES (?, ?, ?, ?, '000', ?)",
+      "INSERT INTO users (name, hash, salt, color, avatar, created) VALUES (?, ?, ?, ?, '0', ?)",
       name,
       await hash(password, salt),
       salt,
       defaultColor,
       Date.now(),
     );
-    return { color: defaultColor, avatar: "000", created: true };
+    return { color: defaultColor, avatar: "0", created: true };
+  }
+
+  // Cambia la contraseña si la actual es correcta.
+  async setPassword(name: string, current: string, next: string): Promise<boolean> {
+    const row = this.ctx.storage.sql
+      .exec<{ hash: string; salt: string }>("SELECT hash, salt FROM users WHERE name = ?", name)
+      .toArray()[0];
+    if (!row || (await hash(current, row.salt)) !== row.hash) return false;
+    const salt = crypto.randomUUID();
+    this.ctx.storage.sql.exec("UPDATE users SET hash = ?, salt = ? WHERE name = ?", await hash(next, salt), salt, name);
+    return true;
   }
 
   getProfile(name: string): Profile | null {

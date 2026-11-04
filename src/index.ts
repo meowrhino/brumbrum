@@ -46,7 +46,7 @@ export default {
       const room = url.searchParams.get("room") || "";
       if (!ROOM_RE.test(room)) return new Response("bad room", { status: 400 });
       // Nombre, color y avatar van SIEMPRE del servidor: el cliente no elige quién es.
-      const profile = (await users.getProfile(user)) ?? { color: defaultColor(user), avatar: "000" };
+      const profile = (await users.getProfile(user)) ?? { color: defaultColor(user), avatar: "0" };
       const target = new URL(request.url);
       target.searchParams.set("name", user);
       target.searchParams.set("color", profile.color);
@@ -69,7 +69,7 @@ export default {
 
     if (url.pathname === "/api/me") {
       if (!user) return json({ name: null });
-      return json({ name: user, mod: isMod(env, user), ...((await users.getProfile(user)) ?? { color: defaultColor(user), avatar: "000" }) });
+      return json({ name: user, mod: isMod(env, user), ...((await users.getProfile(user)) ?? { color: defaultColor(user), avatar: "0" }) });
     }
 
     // La cookie es HttpOnly: solo el servidor puede borrarla.
@@ -83,6 +83,14 @@ export default {
       const color = cleanColor(body.color) ?? undefined;
       const avatar = typeof body.avatar === "string" && AVATAR_RE.test(body.avatar) ? body.avatar : undefined;
       await users.setProfile(user, { color, avatar });
+      return json({ ok: true });
+    }
+
+    if (url.pathname === "/api/password" && request.method === "POST") {
+      if (!user) return json({ error: "unauthorized" }, { status: 401 });
+      const { current, next } = (await request.json()) as { current?: unknown; next?: unknown };
+      if (typeof next !== "string" || next.length < 4) return json({ error: "nueva: 4 caracteres mínimo" }, { status: 400 });
+      if (!(await users.setPassword(user, String(current ?? ""), next))) return json({ error: "la actual no es esa" }, { status: 403 });
       return json({ ok: true });
     }
 

@@ -110,7 +110,7 @@ export class ConversationDO extends DurableObject<Env> {
     // El Worker ya puso aquí el nombre AUTENTICADO y el color del usuario.
     const name = (url.searchParams.get("name") || "anon").slice(0, 25) || "anon";
     const color = cleanColor(url.searchParams.get("color")) ?? defaultColor(name);
-    const avatar = (url.searchParams.get("avatar") || "000").slice(0, 3);
+    const avatar = (url.searchParams.get("avatar") || "0").slice(0, 64);
     const ip = request.headers.get("CF-Connecting-IP") || "local";
     const mod = url.searchParams.get("mod") === "1";
 

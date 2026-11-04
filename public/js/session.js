@@ -21,3 +21,9 @@ export const saveProfile = (p) =>
   fetch("/api/profile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(p) });
 
 export const getRoom = () => location.hash.slice(1);
+
+export async function changePassword(current, next) {
+  const r = await fetch("/api/password", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ current, next }) });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || "error");
+}

@@ -1,5 +1,13 @@
 import { $, colorFor, hhmm, dayKey, dayLabel, linkifyInto } from "./util.js";
-import { avatarSvg } from "./avatar.js";
+import { poporingSvg } from "./poporing.js";
+
+// El SVG de un avatar son ~6 KB; el mismo slime sale en muchos mensajes.
+const svgCache = new Map();
+export function avatarSvg(code, color) {
+  const k = `${code}|${color}`;
+  if (!svgCache.has(k)) svgCache.set(k, poporingSvg(code, color));
+  return svgCache.get(k);
+}
 
 // Pinta la sala como el chat de Dollars: avatar cuadrado con el nombre debajo
 // y bocadillo con pico, todo en el color de quien habla (variable CSS --c en
@@ -16,7 +24,7 @@ let onMod = null; // { del(seq), kick(name) }
 const typing = new Map(); // name → timeout
 
 const colorOf = (name) => colors[name] || colorFor(name);
-const avatarOf = (name) => avatars[name] || "000";
+const avatarOf = (name) => avatars[name] || "0";
 
 export function setMe(name, mod = false) { myName = name; isMod = mod; }
 export function setModActions(actions) { onMod = actions; }
@@ -89,7 +97,7 @@ export function addMessage(m) {
     who.className = "who";
     const av = document.createElement("div");
     av.className = "avatar";
-    av.innerHTML = avatarSvg(avatarOf(m.author)); // SVG propio, no datos del usuario
+    av.innerHTML = avatarSvg(avatarOf(m.author), colorOf(m.author)); // SVG propio, no datos del usuario
     const name = document.createElement("span");
     name.className = "name";
     name.textContent = m.author;
@@ -132,10 +140,14 @@ export function renderHistory(messages, profiles, avs) {
   list().scrollTop = list().scrollHeight;
 }
 
+// El slime va del color del usuario: color y avatar repintan lo mismo.
 export function applyColor(name, color) {
   colors[name] = color;
   for (const li of list().querySelectorAll(".msg")) {
-    if (li.dataset.author === name) li.style.setProperty("--c", color);
+    if (li.dataset.author === name) {
+      li.style.setProperty("--c", color);
+      li.querySelector(".avatar").innerHTML = avatarSvg(avatarOf(name), color);
+    }
   }
   paintPresence();
 }
@@ -143,6 +155,6 @@ export function applyColor(name, color) {
 export function applyAvatar(name, code) {
   avatars[name] = code;
   for (const li of list().querySelectorAll(".msg")) {
-    if (li.dataset.author === name) li.querySelector(".avatar").innerHTML = avatarSvg(code);
+    if (li.dataset.author === name) li.querySelector(".avatar").innerHTML = avatarSvg(code, colorOf(name));
   }
 }

@@ -50,6 +50,13 @@ npx wrangler secret put CLUB_PASSWORD   # la contraseña del club
 npm run deploy
 ```
 
+## avatar
+
+slime píxel-art 32x32: el motor viene de `meowrhino/poporingGenerator`
+(`public/js/poporing.js`, función pura sin DOM). se guarda como índices
+separados por punto en el UsersDO; va del color del usuario. en "tu avatar"
+también se cambia la contraseña (`POST /api/password`).
+
 ## moderación
 
 los nombres de `MODS` en `wrangler.toml` (separados por coma) ven en cada

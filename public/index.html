@@ -55,15 +55,28 @@
   <section id="avatar" class="view" hidden>
     <header class="top"><span class="title small">tu avatar</span><span class="k" id="avatar-name"></span></header>
     <div class="editor">
-      <div class="avatar big" id="preview"></div>
-      <div class="controls">
-        <div class="row"><span class="k">pelo</span><button type="button" data-layer="0" data-d="-1">‹</button><b id="v0"></b><button type="button" data-layer="0" data-d="1">›</button></div>
-        <div class="row"><span class="k">ojos</span><button type="button" data-layer="1" data-d="-1">‹</button><b id="v1"></b><button type="button" data-layer="1" data-d="1">›</button></div>
-        <div class="row"><span class="k">extra</span><button type="button" data-layer="2" data-d="-1">‹</button><b id="v2"></b><button type="button" data-layer="2" data-d="1">›</button></div>
-        <div class="row"><span class="k">color</span><input type="color" id="avatar-color" class="swatch" /><button type="button" id="random-avatar">al azar</button></div>
-        <div class="row"><span></span><button type="button" id="save-avatar">listo →</button></div>
+      <div class="stage">
+        <div class="avatar big" id="preview"></div>
+        <div class="stage-tools">
+          <input type="color" id="avatar-color" class="swatch" title="tu color" />
+          <button type="button" id="random-avatar">al azar</button>
+          <button type="button" id="save-avatar">listo →</button>
+        </div>
+      </div>
+      <div class="panels">
+        <nav class="tabs" id="tabs"></nav>
+        <div id="chips"></div>
       </div>
     </div>
+    <details class="pw">
+      <summary class="k">cambiar contraseña</summary>
+      <form id="pwform" autocomplete="off">
+        <input id="pw-current" type="password" placeholder="la actual" autocomplete="current-password" required />
+        <input id="pw-next" type="password" placeholder="la nueva (4+)" minlength="4" autocomplete="new-password" required />
+        <button type="submit">cambiar</button>
+        <span class="k" id="pw-msg"></span>
+      </form>
+    </details>
   </section>
 
   <!-- 3. sala: avatares + burbujas, estilo clip de Live -->
